@@ -245,9 +245,9 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 {
 	uri.state = URI_STATE_INVALID;
 
-	int start_idx[URI_PART_ELEMENTS] = {0};
-	int end_idx[URI_PART_ELEMENTS] = {0};
-	int pre_state = URI_SCHEME;
+	int start_idx[URI_PART_ELEMENTS] = {0};	// [
+	int end_idx[URI_PART_ELEMENTS] = {0};	// )
+	int pre_state = URI_SCHEME;	// 当前的解析步骤
 	bool in_ipv6 = false;
 	int i;
 
@@ -263,6 +263,7 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 	if (end_idx[URI_SCHEME] == 0)
 		return -1;
 
+	// 提取 scheme 部分
 	if (str[i] == '/' && str[i + 1] == '/')
 	{
 		pre_state = URI_HOST;
@@ -274,6 +275,7 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 
 		start_idx[URI_HOST] = i;
 	}
+	// 边缘情况(没有 // 即 http:example.com) 保有容忍度
 	else
 	{
 		pre_state = URI_PATH;
@@ -285,12 +287,15 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 	{
 		for (; ; i++)
 		{
+			// 状态机循环，标记这阶段的结束和下阶段的开始
+			// 进入循环前，同时设置 userinfo 和 host 的 start，表明 userinfo 不强制使用
+			// userinfo@host:port/path?query#fragment 其中 ipv6的host用 [] 包裹
 			switch (authority_map[(unsigned char)str[i]])
 			{
 				case 0:
 					continue;
 
-				case URI_USERINFO:
+				case URI_USERINFO:	// '@'
 					if (str[i + 1] == '[')
 						in_ipv6 = true;
 
@@ -299,7 +304,7 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 					pre_state = URI_HOST;
 					continue;
 
-				case URI_HOST:
+				case URI_HOST:	// ':'
 					if (str[i - 1] == ']')
 						in_ipv6 = false;
 
@@ -311,14 +316,14 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 					}
 					continue;
 
-				case URI_QUERY:
+				case URI_QUERY:	// '?'
 					end_idx[pre_state] = i;
 					start_idx[URI_QUERY] = i + 1;
 					pre_state = URI_QUERY;
 					skip_path = true;
 					continue;
 
-				case URI_FRAGMENT:
+				case URI_FRAGMENT:	// '#'
 					end_idx[pre_state] = i;
 					start_idx[URI_FRAGMENT] = i + 1;
 					end_idx[URI_FRAGMENT] = i + strlen(str + i);
@@ -326,7 +331,7 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 					skip_path = true;
 					break;
 
-				case URI_PATH:
+				case URI_PATH:	// '/'
 					if (skip_path)
 						continue;
 
@@ -345,6 +350,7 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 	if (pre_state != URI_PART_ELEMENTS)
 		end_idx[pre_state] = i;
 
+	// 确保 path、query、fragment 正确被切割
 	if (!skip_path)
 	{
 		pre_state = URI_PATH;
@@ -374,6 +380,7 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 		end_idx[pre_state] = i + strlen(str + i);
 	}
 
+	// 有效性检查
 	for (int i = 0; i < URI_QUERY; i++)
 	{
 		for (int j = start_idx[i]; j < end_idx[i]; j++)
@@ -385,7 +392,7 @@ int URIParser::parse(const char *str, ParsedURI& uri)
 
 	char **dst[URI_PART_ELEMENTS] = {&uri.scheme, &uri.userinfo, &uri.host, &uri.port,
 					 &uri.query, &uri.fragment, &uri.path};
-
+	// 录入结果
 	for (int i = 0; i < URI_PART_ELEMENTS; i++)
 	{
 		if (end_idx[i] > start_idx[i])
