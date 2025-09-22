@@ -9,8 +9,8 @@
 #include "workflow/WFTaskFactory.h"
 #include "workflow/WFFacilities.h"
 
-#define REDIRECT_MAX    5
-#define RETRY_MAX       2
+#define REDIRECT_MAX    5	// 最大重定向次数
+#define RETRY_MAX       2	// 请求失败重试次数
 
 void wget_callback(WFHttpTask *task)
 {
@@ -83,7 +83,7 @@ static WFFacilities::WaitGroup wait_group(1);
 
 void sig_handler(int signo)
 {
-	wait_group.done();
+	wait_group.done();	//  Workflow 提供的同步原语，用于等待任务完成
 }
 
 int main(int argc, char *argv[])
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	signal(SIGINT, sig_handler);
+	signal(SIGINT, sig_handler);	// 捕获 Ctrl+C
 
 	std::string url = argv[1];
 	if (strncasecmp(argv[1], "http://", 7) != 0 &&
