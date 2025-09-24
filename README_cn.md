@@ -180,3 +180,63 @@ sudo dnf install workflow
 #### Gitee仓库
 用户可以在访问GitHub遇到困难时，使用我们的Gitee官方仓库：https://gitee.com/sogou/workflow  
 **另外也麻烦在Gitee上star了项目的用户，尽量同步star一下[GitHub仓库](https://github.com/sogou/workflow)。谢谢！**
+
+```
+#### UML类图
+SubTask
+-   parent: class ParallelTask*
+-   pointer: void*
++   SubTask() 
++   ~SubTask()
++   dispatch()
+-   done() : SubTask*
+
+ExecRequest
+
+ExecSession
+
+CommRequest
+#   state: int
+#   error: int
+#   target: CommTarget*
+#   timeout_reason: int
+#   wait_timeout: int
+#   object: CommSchedObject*
+#   scheduler: CommScheduler*
++   CommRequest(CommSchedObject*， CommScheduler*)
++   get_request_object(): CommSchedObject*
++   dispatch(): void
+#   handle(state: int, error: int): void
+
+CommSession
+
+WFNetworkTask
+<class REQ, class RESP>
++  userdata: void*
+#  send_timeo: int
+#  receive_timeo: int
+#  keep_alive_timeo: int
+#  watch_timeo: int
+#  req: REQ
+#  resp: RESP
+#  prepare: std::function<void(WFNetworkTask<REQ, RESP>*)>
+#  callback: std::function<void(WFNetworkTask<REQ, RESP>*)>
+#  WFNetworkTask(object:: CommSchedObject*, scheduler: CommScheduler *, cb: std::function<void (WFNetworkTask<REQ, RESP> *)>&&) 初始化 CommRequest(object, scheduler)
++  start(): void
++  dismiss(): void
++  get_...()/set_...()
++  get_connection(): WFConnection*
++  noreply(): void
++  push(buf: const void*, size: size_t): int
++  closed(): bool
+
+WFHttpTask
+using WFHttpTask = WFNetworkTask<protocol::HttpRequest, protocol::HttpResponse>;
++  get_req(): protocol::HttpRequest*
++  get_resp(): protocol::HttpResponse*
++  get_state(): int
++  get_error(): int
+...
+
+WFTaskFactory
+```
